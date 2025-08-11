@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="visual.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+    <div class="prop" id="graphProperties"> 
+        <h1>Graph Properties</h1>
+        <form id="graphForm">
+            <div class="form-row">
+                <label for="seed">Seed</label>
+                <input type="number" id="seed" name="seed" value="0" required>
+            </div>
+            <div class="form-row">
+                <label for="nodes">Nodes</label>
+                <input type="number" id="nodes" name="nodes" min="1" value="64" required>
+            </div>
+            <div class="form-row">
+                <label for="edges">Edges</label>
+                <input type="number" id="edges" name="edges" min="0" value="256" required>
+            </div>
+            <div class="form-row">
+                <label for="density">Density</label>
+                <input type="number" id="density" name="density" value="0.05" step="0.001" min="0" max="1" required>
+            </div>
+            <div class="checkbox-row">
+                <label class="custom-checkbox-container">Planar
+                    <input type="checkbox" id="planar" name="planar">
+                    <span class="checkmark"></span>
+                </label>
+            </div>
+            <div class="checkbox-row">
+                <label class="custom-checkbox-container">Directed
+                    <input type="checkbox" id="directed" name="directed">
+                    <span class="checkmark"></span>
+                </label>
+            </div>
+            <div class="checkbox-row">
+                <label class="custom-checkbox-container">Connected
+                    <input type="checkbox" id="Connected" name="connected" checked>
+                    <span class="checkmark"></span>
+                </label>
+            </div>
+                <button type="submit" id="submitBtn" style=" font-weight: bold; margin-left:-100px;margin-top:10px;text-align:center;">Submit</button>
+                <button type="button" id="confirmBtn" style="font-weight:bold;display:none;margin-left:30px;margin-top:-18px;text-align: center;">Confirm</button>
+            </form>
+    </div>
+    <script>
+        const form = document.getElementById('graphForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const confirmBtn = document.getElementById('confirmBtn');
+
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+            submitBtn.style.color = '#aaaaaa';
+            confirmBtn.style.display = 'block';
+        });
+        
+        confirmBtn.addEventListener('click', function() {
+            const nodes = document.getElementById('nodes').value;
+            const edges = document.getElementById('edges').value;
+            const density = document.getElementById('density').value;            
+            const seed = document.getElementById('seed').value;
+            const planar = document.getElementById('planar').checked ? 1 : 0;
+            const directed = document.getElementById('directed').checked ? 1 : 0
+            const connected = document.getElementById('Connected').checked ? 1 : 0;
+            confirmBtn.style.display = 'none';
+            submitBtn.style.color = '#000000';
+
+            // const jsonContent = JSON.stringify({
+            //     seed: seed,
+            //     nodes: nodes,
+            //     edges: edges,
+            //     density: density,
+            //     planar: planar,
+            //     directed: directed,
+            //     connected: connected
+            // }, null, 4);
+
+        });
+    </script>
+</body>
+</html>

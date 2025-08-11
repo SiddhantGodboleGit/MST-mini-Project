@@ -1,0 +1,8 @@
+success: 1
+seed: 0
+nodes: 64
+edges: 256
+density: 0.05
+planar: False
+directed: False
+connected: True
