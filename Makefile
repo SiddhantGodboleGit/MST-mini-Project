@@ -13,18 +13,18 @@ INPUT2 = input_graph.txt
 OUTPUT = output_mst
 
 
-.PHONY: all matrix mstclean
+.PHONY: all matrix mst clean new cpp
 
 #Have python3
 
-all:
-	python3 $(PYT) &
+new:
+	python3 $(PYT)
 
-matrix:
-#	$(CPP) $(CFLAGS) -o $(EGEN) $(GEN)
-#	./$(EGEN)
-#	@echo "Matrix generated successfully."
-	@echo "USE cpp to generate matrix"
+cpp: $(EGEN)
+	$(CPP) $(CFLAGS) -o $(EGEN) $(GEN)
+
+matrix: $(EGEN)
+	./$(EGEN)
 
 mst:
 #	$(CPP) $(CFLAGS) -o $(EXE) $(MST)
@@ -34,4 +34,8 @@ mst:
 	
 # Clean up generated files
 clean:
-	rm -f $(EXE) $(EGEN) $(INPUT2) $(OUTPUT) $(INPUT)
+	rm -f $(EXE) $(INPUT2) $(OUTPUT) $(INPUT)
+
+
+$(EGEN) :
+	$(CPP) $(CFLAGS) -o $(EGEN) $(GEN) $@ $<
