@@ -1,9 +1,0 @@
-{
-    "seed": "0",
-    "nodes": "64",
-    "edges": "256",
-    "density": "0.12698",
-    "connected": true,
-    "complete": false,
-    "regular": false
-}
