@@ -76,16 +76,24 @@ void gen_edge(){
     //generate edges
     while(done < edges){
         int white = rand() % nodes;
-        int red = rand() % (nodes - matrix[white][0]);
+        int red;
+        do {
+            red = rand() % nodes;
+        } while (red == white);
 
-        if (white < red) {
-            matrix[white][red - white] = -1;
-        } else {
-            matrix[red][white - red] = -1;
+        int temp;
+        if (white < red){
+            temp = red;
+            red = white;
+            white = temp;
         }
-        matrix[white][0]++;
-        matrix[red][0]++;
-        done++;
+
+        if (matrix[red][white - red] == 0){
+            matrix[red][white - red] = -2;
+            matrix[white][0]++;
+            matrix[red][0]++;
+            done++;
+        }
         
     }
 }
@@ -96,7 +104,7 @@ void break_edges(){
         int till = nodes - i;
         matrix[i][0] = nodes;
         for (int j = 0; j < till; j++){
-            if (matrix[i][j] != -1) matrix[i][j] = -2;
+            if (matrix[i][j] > -1) matrix[i][j] = -2;
         }
     }
     done = (nodes*(nodes-1))/2;
@@ -195,7 +203,6 @@ int main() {
             if (key == "\"seed\":") infile >> colon >> seed;
             else if (key == "\"nodes\":") infile >> colon  >> nodes;
             else if (key == "\"edges\":") infile >> colon  >> edges;
-            else if (key == "\"density\":") infile >> colon  >> density;
             else if (key == "\"connected\":"){ infile >> colon  >> key; connected = (key == "true" || key == "true,"); }
             else if (key == "\"complete\":") { infile >> colon  >> key; complete = (key == "true" || key == "true,"); }
             else if (key == "\"regular\":") { infile >> colon  >> key; regular = (key == "true" || key == "true,"); }
@@ -204,13 +211,11 @@ int main() {
     // cout << "Parameters read from input_params.json:" << endl;
     // cout << success << " " << seed << " " << nodes << " " << edges << " " << density << " "
     //      << connected << " " << complete << " " << regular << endl;
-
     
+    density = (double)edges / ((nodes*(nodes-1))/2);
     if (nodes < 2) nodes = 2;
     if (edges > ((nodes)*(nodes-1))/2 ) edges = ((nodes-1)*(nodes))/2;
     if (edges < 0) edges = 0;
-    if (density > 1) {density = 1; complete = 1;}
-    if (density < 0) {density = 0;}
     
     // set the seed
     srand(seed);

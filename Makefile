@@ -1,10 +1,10 @@
 # CPP Flages
 CPP = g++
-CFLAGS = -Wall -Wextra -march=native -flto  -O2
+CFLAGS = -Wall -Wextra -march=native -flto -O2
 
 # Files
-EXE = mst
-EGEN = gen
+EXE = mst.out
+EGEN = gen.out
 MST = mst.cpp
 GEN = gen.cpp
 PYT = visual.py
@@ -13,29 +13,31 @@ INPUT2 = input_graph.txt
 OUTPUT = output_mst
 
 
-.PHONY: all matrix mst clean new cpp
+.PHONY: all graph mst clean new cpp
 
 #Have python3
 
-new:
+all: $(EXE) $(EGEN)
 	python3 $(PYT)
 
-cpp: $(EGEN)
-	$(CPP) $(CFLAGS) -o $(EGEN) $(GEN)
+cpp: $(EXE) $(EGEN)
 
-matrix: $(EGEN)
+$(EXE): $(MST)
+	$(CPP) $(CFLAGS) -o $@ $<
+
+$(EGEN): $(GEN)
+	$(CPP) $(CFLAGS) -o $@ $<
+
+graph: $(EXE) $(EGEN)
 	./$(EGEN)
 
-mst:
-#	$(CPP) $(CFLAGS) -o $(EXE) $(MST)
-#	./$(EXE) $(INPUT) $(INPUT2) $(OUTPUT)
-#	@echo "MST generated successfully."
-	@echo "USE cpp to generate MST"
-	
+mst: $(EXE) $(EGEN)
+	./$(EXE)
+
 # Clean up generated files
 clean:
 	rm -f $(EXE) $(INPUT2) $(OUTPUT) $(INPUT)
 
-
-$(EGEN) :
-	$(CPP) $(CFLAGS) -o $(EGEN) $(GEN) $@ $<
+cleanall: clean
+	rm -f $(EGEN)
+	rm -f input/*
