@@ -28,6 +28,11 @@ class GraphPropertiesForm:
         entry_relief = tk.SOLID
         entry_borderwidth = 0
 
+        self.cores_var = tk.StringVar(value="4")
+        cores_entry = tk.Entry(master, textvariable=self.cores_var, font=entry_font, width=entry_width,
+                       relief=entry_relief,  highlightthickness=0)
+        cores_entry.place(x=160, y=55)
+
         self.seed_var = tk.StringVar(value="0")
         seed_entry = tk.Entry(master, textvariable=self.seed_var, font=entry_font, width=entry_width, justify='right',
                       bg=entry_bg, relief=entry_relief, borderwidth=entry_borderwidth, highlightthickness=0, disabledbackground='#fff')
