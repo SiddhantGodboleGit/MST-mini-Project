@@ -118,11 +118,21 @@ class GraphPropertiesForm:
         self.edges_var.set(self.data["edges"])
         self.thread_var.set(self.data["threads"])
         # Ckeck for existance of input_graph.txt
+        connected_val = "1" if self.data['connected'] else "0"
+        complete_val = "1" if self.data['complete'] else "0"
+        regular_val = "1" if self.data['regular'] else "0"
+
+                # Debug: Print the converted values
+        print(f"Debug - connected_val: {connected_val}")
+        print(f"Debug - complete_val: {complete_val}")
+        print(f"Debug - regular_val: {regular_val}")
+        
+        filename = f"input/{self.data['nodes']}_{self.data['edges']}_{self.data['seed']}_{connected_val}_{complete_val}_{regular_val}.txt"
 
         with open("input_params.json", "w") as f:
             json.dump(self.data, f, indent=4)
 
-        filename = f"input/{self.data['nodes']}_{self.data['edges']}_{self.data['seed']}_{int(self.data['connected'])}{int(self.data['complete'])}{int(self.data['regular'])}.txt"
+        # filename = f"input/{self.data['nodes']}_{self.data['edges']}_{self.data['seed']}_{bool(self.data['connected'])}{bool(self.data['complete'])}{bool(self.data['regular'])}.txt"
 
         if os.path.exists (filename):
             self.confirm_btn.config(state=tk.NORMAL, text="MST", command=self.confirm_action)

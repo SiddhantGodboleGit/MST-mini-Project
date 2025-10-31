@@ -23,7 +23,7 @@ using namespace std;
 
 int ** matrix;
 int *meta;
-int success, seed, nodes, edges;
+long success, seed, nodes, edges;
 double density;
 bool connected, complete, regular;
 
@@ -36,37 +36,56 @@ void spanit(){
     vector<int> connected;
     vector<int> unconnected;
     int connected_nodes = 1;
-    int unconnected_nodes = nodes - 1;
+    int unconnected_nodes = nodes;
 
     for (int i = 0; i < nodes; i++){
         unconnected.push_back(i);
     }
 
-    int now = rand() % nodes;
-
+    int now = rand() % nodes;        
+    
     connected.push_back(unconnected[now]);
-    unconnected[now] = unconnected[unconnected_nodes];
     unconnected_nodes--;
-
+    unconnected[now] = unconnected[unconnected_nodes];
+    // for (int i = 0; i < unconnected_nodes; i++){
+    //         cout << unconnected[i] << " ";
+    //     }
     while (connected_nodes < nodes){
-        int white = unconnected[rand() % unconnected_nodes];
+        int white_loc = rand() % unconnected_nodes;
+        int white = unconnected[white_loc];
         int red;
         do {
             red = connected[rand() % connected_nodes];
         } while (red == white);
 
+        // cout << "Connecting " << white << " and " << red << endl;
+        // for (int i = 0; i < unconnected_nodes; i++){
+        //     cout << unconnected[i] << " ";
+        // }
+        // cout << endl;
+        
         if (white < red) {
-            matrix[white][red - white] = -1;
-        } else {
-            matrix[red][white - red] = -1;
+            int temp = red;
+            red = white;
+            white = temp;
         }
+        matrix[red][white - red] = -1;
+        
         matrix[white][0]++;
         matrix[red][0]++;
         done++;
-
-        connected.push_back(unconnected[white]);
-        unconnected[white] = unconnected[unconnected_nodes];
+        //         cout << "Adding edge between " << red << " and " << white << "\n";
+        //         cout << matrix[red][white - red] << "\n";
+        // for (int i = 0; i < nodes; i++){
+        //     for (int j = 0; j < nodes - i; j++){
+        //         cout << matrix[i][j] << " ";
+        //     }
+        //     cout << "\n";
+        // }
+        
+        connected.push_back(unconnected[white_loc]);
         unconnected_nodes--;
+        unconnected[white_loc] = unconnected[unconnected_nodes];
         connected_nodes++;
     }
     return;
@@ -87,7 +106,13 @@ void gen_edge(){
             red = white;
             white = temp;
         }
-
+        // cout << "Adding edge between " << red << " and " << white << "\n";
+        // for (int i = 0; i < nodes; i++){
+        //     for (int j = 0; j < nodes - i; j++){
+        //         cout << matrix[i][j] << " ";
+        //     }
+        //     cout << "\n";
+        // }
         if (matrix[red][white - red] == 0){
             matrix[red][white - red] = -2;
             matrix[white][0]++;
@@ -96,6 +121,7 @@ void gen_edge(){
         }
         
     }
+    cout << "Generated graph with " << nodes << " nodes and " << done << " edges.\n";
 }
 
 void break_edges(){
@@ -178,7 +204,7 @@ void print_it(){
             }
         }
     }
-    cout << "Generated graph with " << nodes << " nodes and " << total << " edges.\n";
+    // cout << "Generated graph with " << nodes << " nodes and " << total << " edges.\n";
     string filename_complete = "input/" + to_string(nodes) + "_" + to_string(edges) + "_" + to_string(seed) + "_" + to_string(connected) + to_string(complete) + to_string(regular) + ".txt";
     outfile.close();
     rename("input/making.txt", filename_complete.c_str());
@@ -203,27 +229,28 @@ int main() {
             if (key == "\"seed\":") infile >> colon >> seed;
             else if (key == "\"nodes\":") infile >> colon  >> nodes;
             else if (key == "\"edges\":") infile >> colon  >> edges;
-            else if (key == "\"connected\":"){ infile >> colon  >> key; connected = (key == "true" || key == "true,"); }
-            else if (key == "\"complete\":") { infile >> colon  >> key; complete = (key == "true" || key == "true,"); }
-            else if (key == "\"regular\":") { infile >> colon  >> key; regular = (key == "true" || key == "true,"); }
+            else if (key == "\"connected\":"){ infile  >> key; connected = (key == "true" || key == "true,"); }
+            else if (key == "\"complete\":") { infile  >> key; complete = (key == "true" || key == "true,"); }
+            else if (key == "\"regular\":") { infile  >> key; regular = (key == "true" || key == "true,"); }
         }
     }
+
     // cout << "Parameters read from input_params.json:" << endl;
-    // cout << success << " " << seed << " " << nodes << " " << edges << " " << density << " "
-    //      << connected << " " << complete << " " << regular << endl;
     
     density = (double)edges / ((nodes*(nodes-1))/2);
     if (nodes < 2) nodes = 2;
-    if (edges > ((nodes)*(nodes-1))/2 ) edges = ((nodes-1)*(nodes))/2;
+    if (edges > ((nodes)*(nodes-1))/2 ){ edges = ((nodes-1)*(nodes))/2; cout << "Edges exceed max possible edges, setting to complete graph.\n"; }
     if (edges < 0) edges = 0;
     
+    cout << success << " " << seed << " " << nodes << " " << edges << " " << density << " "
+         << connected << " " << complete << " " << regular << endl;
     // set the seed
     srand(seed);
 
     matrix = new int*[nodes];
     meta = new int [nodes];
     for (int i = 0; i < nodes; i++) {
-        matrix[i] = new int[nodes - i ]();
+        matrix[i] = new int[nodes - i  ]();
     }
 
     //if connected make spanning tree first
@@ -238,7 +265,10 @@ int main() {
         break_edges();
     }
 
+    // gen_edge();
+
     if (complete == 1){
+        edges = (nodes*(nodes-1))/2;
         fill_in_complete();
     }
     else fill_in();
