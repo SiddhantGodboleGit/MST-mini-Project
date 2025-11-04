@@ -1,7 +1,7 @@
 # CPP Flages
 CPP = g++
 #make int as int 4 bytes for faster computation 
-CFLAGS = -march=native -mtune=native -flto -O3 -DNDEBUG -funroll-loops -ffast-math -finline-functions -fomit-frame-pointer -pipe -fopenmp
+CFLAGS = -march=native -O3 -flto -ffast-math -fno-math-errno -fno-trapping-math
 
 # Files
 EXE = mst.out
@@ -36,8 +36,8 @@ graph: $(EXE) $(EGEN)
 
 mst: $(EXE) $(EGEN)
 	mkdir input -p
-	./$(EXE)
 	mkdir output -p
+	./$(EXE)
 
 
 # Clean up generated files

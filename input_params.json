@@ -1,6 +1,6 @@
 {
     "seed": "0",
-    "nodes": "64",
+    "nodes": "10000",
     "edges": "256",
     "threads": "4",
     "connected": true,

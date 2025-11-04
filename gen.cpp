@@ -18,16 +18,29 @@
 #include <fstream>
 #include <string>
 #include <random>
+#include <thread>
 
 using namespace std;
 
 int ** matrix;
 int *meta;
+int *sizes;
+int *last_index;
 long success, seed, nodes, edges;
 double density;
 bool connected, complete, regular;
-
+int * edgesize;
 int done = 0;
+
+void print_graph(){
+    cout << "Graph adjacency matrix:\n";
+    for (int i = 0; i < nodes; i++){
+        for (int j = 0; j < nodes - i; j++){
+            cout << matrix[i][j] << " ";
+        }
+        cout << "\n";
+    }
+}
 
 void spanit(){
     //make a random spanning tree
@@ -88,11 +101,16 @@ void spanit(){
         unconnected[white_loc] = unconnected[unconnected_nodes];
         connected_nodes++;
     }
+    cout << "Spanning tree created with " << connected_nodes << " nodes and " << done << " edges.\n";
     return;
 }
 
 void gen_edge(){
     //generate edges
+    // for (int i = 0 ; i < nodes ; i ++){
+    //     matrix[i][0] = 0;
+    // }
+    // cout << "Generating edges...\n";
     while(done < edges){
         int white = rand() % nodes;
         int red;
@@ -119,21 +137,23 @@ void gen_edge(){
             matrix[red][0]++;
             done++;
         }
-        
+        // cout << "\rEdges generated: " << done << "/" << edges << flush;
     }
-    cout << "Generated graph with " << nodes << " nodes and " << done << " edges.\n";
+    // cout << "Generated graph with " << nodes << " nodes and " << done << " edges.\n";
 }
 
 void break_edges(){
     //break edges
+    cout << nodes;
     for (int i = 0; i < nodes; i++){
         int till = nodes - i;
         matrix[i][0] = nodes;
-        for (int j = 0; j < till; j++){
+        for (int j = 1; j < till; j++){
             if (matrix[i][j] > -1) matrix[i][j] = -2;
         }
     }
     done = (nodes*(nodes-1))/2;
+
     while(done > edges){
         int white = rand() % nodes;
         int red;
@@ -157,6 +177,7 @@ void break_edges(){
             }
         }
     }
+
 }
 
 void fill_in_complete(){
@@ -187,27 +208,89 @@ void fill_in(){
 }
 
 
-void print_it(){
-    // file in input folder with name nodes_edges_seed_connectedcompleteregular.txt
-    string filename = "input/making.txt";
-    //empty the file first
-    ofstream outfile;
-    outfile.open(filename , std::ios::out | std::ios::trunc);
-    // outfile << nodes << " " << done << "\n";
-    int total = 0;
+void get_sizes(){
+    // sizes is the number of  non-consecutive edges for each node
+    // reseting when a zero is found
+    edgesize = new int[nodes]();
     for (int i = 0; i < nodes; i++){
-        matrix[i][0] = -1 * matrix[i][0];
-        for (int j = i+1; j < nodes; j++){
-            if (matrix[i][j - i] != 0 ){
-                outfile << i << " " << j << " " << matrix[i][j - i] << "\n";
-                total++;
+        for (int j = 1; j < nodes - i ; j++){
+            if (matrix[i][j] > 0){
+                edgesize[i]++;
+                edgesize[j + i]++;
+                if (last_index[i] + 1 == j + i){
+                    // consecutive
+                    last_index[i] = j + i;
+                }
+                else {
+                    // cout << "consecutive edge for node " << i << " at " << j + i << "\n";
+                    sizes[i]++;
+                    last_index[i] = j + i;
+                }
+                if (last_index[j + i] + 1 == i ){
+                    // consecutive
+                    last_index[j + i] = i;
+                }
+                else {
+                    // cout << "consecutive edge for node " << j + i << " at " << i << "\n";
+                    // cout << "last index was " << last_index[j + i] << "\n";
+                    sizes[j + i]++;
+                    last_index[j + i] = i;
+                }
             }
         }
     }
-    // cout << "Generated graph with " << nodes << " nodes and " << total << " edges.\n";
+}
+
+void print_it(){
+    // file in input folder with name nodes_edges_seed_connectedcompleteregular.txt
+    string filename = "input/making.txt";
+      FILE* file = fopen(filename.c_str(), "wb");
+    if (!file) return;
+    
+    // Use a large buffer for batch writing
+    char buffer[65536];
+    char* buf_ptr = buffer;
+    const char* buf_end = buffer + sizeof(buffer) - 100; // Leave space for last writ
+    
+    // first line is edges(sizes) of each node
+    for (int i = 0; i < nodes; i++){
+        buf_ptr += sprintf(buf_ptr, "%d(%d) ", edgesize[i], sizes[i]);
+        if (buf_ptr >= buf_end) {
+            fwrite(buffer, 1, buf_ptr - buffer, file);
+            buf_ptr = buffer;
+        }
+    }
+    buf_ptr += sprintf(buf_ptr, "\n");
+
+    // then the adjacency list
+    int edge_number = 1;
+    for (int i = 0; i < nodes; i++){
+
+        for (int j = i+1; j < nodes; j++){
+            if (matrix[i][j - i] != 0){
+                // Fast integer to string conversion and formatting
+                buf_ptr += sprintf(buf_ptr, "%d(%d) ", j, matrix[i][j - i]);
+                
+                // Flush buffer when nearly full
+                if (buf_ptr >= buf_end) {
+                    fwrite(buffer, 1, buf_ptr - buffer, file);
+                    buf_ptr = buffer;
+                }
+            }
+        }
+        buf_ptr += sprintf(buf_ptr, "\n");
+    }
+    
+    // Write remaining data
+    if (buf_ptr > buffer) {
+        fwrite(buffer, 1, buf_ptr - buffer, file);
+    }
+    
+    fclose(file);
     string filename_complete = "input/" + to_string(nodes) + "_" + to_string(edges) + "_" + to_string(seed) + "_" + to_string(connected) + to_string(complete) + to_string(regular) + ".txt";
-    outfile.close();
     rename("input/making.txt", filename_complete.c_str());
+    cout << "Graph written to file \033[1m" << filename_complete << "\033[0m\n";
+    
     return;
 }
 
@@ -244,12 +327,16 @@ int main() {
     
     cout << success << " " << seed << " " << nodes << " " << edges << " " << density << " "
          << connected << " " << complete << " " << regular << endl;
-    // set the seed
+    // set the seed 
     srand(seed);
 
-    matrix = new int*[nodes];
-    meta = new int [nodes];
+    matrix = new int*[nodes]();
+    meta = new int [nodes]();
+    sizes = new int [nodes]();
+    last_index = new int [nodes]();
+
     for (int i = 0; i < nodes; i++) {
+        last_index[i] = -1;
         matrix[i] = new int[nodes - i  ]();
     }
 
@@ -258,20 +345,25 @@ int main() {
         spanit();
     }
 
+    
     if (density < 0.5) {
         gen_edge();
     }
     else {
         break_edges();
     }
-
+    
     // gen_edge();
-
+    
     if (complete == 1){
         edges = (nodes*(nodes-1))/2;
         fill_in_complete();
     }
     else fill_in();
+    
+    get_sizes();
+    
+    // print_graph();
 
     print_it();
 
@@ -279,5 +371,9 @@ int main() {
         delete[] matrix[i];
     }
     delete[] matrix;
+    delete[] meta;
+    delete[] sizes;
+    delete[] last_index;
+    delete[] edgesize;
 
 }
