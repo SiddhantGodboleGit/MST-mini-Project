@@ -1,14 +1,15 @@
+// SINGLE THREADED version of my new algo for mst
+
+// Name Conflict resolution
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <vector>
 #include <iostream>
 #include <fstream>
-#include <thread>
-#include <mutex>
 #include <chrono>
-#include <atomic>
-#include <condition_variable>
 #include <sstream>
 using namespace std;
 #define metyr 1
@@ -27,21 +28,19 @@ int * branch_minv;
 int * weights;
 int * order1;
 int * order2;
-mutex mstx;
 bool condition_1 = 0;
 bool condition_2 = 0;
-condition_variable cv;
 
 long nodes = 64;
 long long edges = 256;
-atomic_int threads(4);
-atomic_uint node_num(0);
-atomic_uint total_weight(0);
-atomic_uint edge(0);
-atomic_uint done(0);
-atomic_uint order(0);
-atomic_uint conflict(0);
-atomic_uint leaf_count(0);
+int threads = 4;
+uint node_num = 0;
+uint total_weight = 0;
+uint edge = 0;
+uint done = 0;
+uint order = 0;
+uint conflict = 0;
+uint leaf_count = 0;
 string filename_complete;
 
 void mst_to_file(int * MST1, int * MST2){
@@ -51,14 +50,14 @@ void mst_to_file(int * MST1, int * MST2){
     filename = "output/" + filename.substr(filename.find_last_of('/') + 1);
     ofstream outfile;
     outfile.open(filename , std::ios::out | std::ios::trunc);
-    int total = edge.load();
+    int total = edge;
     for (int i = 0; i < total; i++){
         int u = MST1[i];
         int v = MST2[i];
         int w = weights[u];
         outfile << u << " " << v << " "  << w << "\n";
     }
-    cout << "MST written to file \033[1m" << filename << "\033[0m with total weight " << total_weight.load() << ".\n";
+    cout << "MST written to file \033[1m" << filename << "\033[0m with total weight " << total_weight << ".\n";
     outfile.close();
     return;
 }
@@ -116,7 +115,7 @@ bool get_ready(){
     if (thread_temp < 1) thread_temp = 1;
     if (thread_temp > nodes) thread_temp = nodes;
     if (complete) edges = ((nodes-1)*(nodes))/2;
-    threads.store(thread_temp);
+    threads = thread_temp;
     srand(seed);    
 
     if (filename_complete == "")
@@ -148,8 +147,10 @@ bool get_ready(){
         last_entry[i] = -1;
         int sizez = 0;
         iss >> edge_count >> paren >> sizez >> paren;
+        // cout << "Node " << i << " has " << edge_count << " edges and " << sizez << " zeros.\n";
         sizess[i] = sizez + edge_count;
         graph[i] = new int32_t[sizess[i]+1];             // int 32 for smaller size
+        // cout << "Node " << i << " has " << edge_count << " edges and " << sizess[i] << " zeros.\n";
     }
 
 
@@ -167,6 +168,7 @@ bool get_ready(){
             else {
                 graph[i][++last_entry[i]] = -(j); // mark zeros as negative count
                 graph[i][++last_entry[i]] = weight;
+                // cout << "Inserted " << (j - last_index[i] - 1) << " zeros for node " << i << " before edge to node " << j << ".\n";
             }
 
             if (last_index[j] + 1 == i){
@@ -175,6 +177,7 @@ bool get_ready(){
             else {
                 graph[j][++last_entry[j]] = -(i); // mark zeros as negative count
                 graph[j][++last_entry[j]] = weight;
+                // cout << "Inserted " << (i - last_index[j] - 1) << " zeros for node " << j << " before edge to node " << i << ".\n";
             }
             last_index[i] = j;
             last_index[j] = i;
@@ -188,9 +191,8 @@ bool get_ready(){
 }
 
 void MST(int * MST1, int * MST2 , int id){
-    // unique_lock<mutex> lock(mstx);
+    //get smallest edge of each node
     int now = 0;
-    now = node_num.fetch_add(1);
                                         // First phase: find minimum edge for each node
                                         // and set up meta data
     while (now < nodes){                                         
@@ -217,29 +219,21 @@ void MST(int * MST1, int * MST2 , int id){
             order1[now] = minloc;
             order2[minloc] = now;}
         else meta[now] = 1;
-        now = node_num.fetch_add(1);
+        now++;
     }
-    
-    // barrier
-    now = done.fetch_add(1);
-    // cout << now << "\n";
-    if(now == threads-1){
-        node_num.store(0);
-        done.store(0);
-        condition_1 = 1;
-        condition_2 = 0;
-        // cv.notify_all();
-    }
-    // cv.wait(lock, []{return condition_1;}); 
-    while (!condition_1) usleep(1);
+
+    now = 0;
+
 
     // Second phase: find conflicts 
     //              get leaf nodes of conflict chains
         //              add non-conflict edges to MST
-    now = node_num.fetch_add(1);
+
+    conflict = 0;
+
     while (now < nodes){            
         if (minl[now] == -1){
-            now = node_num.fetch_add(1);
+            now = now++;
             my_grp[now] = now;
             continue;
         }
@@ -253,52 +247,38 @@ void MST(int * MST1, int * MST2 , int id){
                     order1[minl[now]] = now;
                     order2[minl[now]] = now;
                     order1[now] = now;
-                    groupn[conflict.fetch_add(1)] = now;
-                    int this_edge = edge.fetch_add(1);
-                    MST1[this_edge] = now;
-                    MST2[this_edge] = minl[now];
-                    weights[this_edge] = minv[now];
-                    weights[this_edge] = id;
-                    total_weight.fetch_add(minv[now]);
+                    groupn[conflict] = now;
+                    conflict++;
+                    MST1[edge] = now;
+                    MST2[edge] = minl[now];
+                    weights[edge] = minv[now];
+                    edge++;
+                    total_weight += minv[now];
                 }
             }
         else {
-            int this_edge = edge.fetch_add(1);
-            MST1[this_edge] = now;
-            MST2[this_edge] = minl[now];
-            weights[this_edge] = minv[now];
-            weights[this_edge] = id;
-            total_weight.fetch_add(minv[now]);
+            MST1[edge] = now;
+            MST2[edge] = minl[now];
+            weights[edge] = minv[now];
+            edge++;
+            total_weight += minv[now];
             my_grp[now] = my_grp[minl[now]];
         }
 
         if (meta[now] == 0 && minl[minl[now]] != now){
-            int leaf_index = leaf_count.fetch_add(1);
-            leaves[leaf_index] = now;
+            leaves[leaf_count] = now;
+            leaf_count++;
         }
-        now = node_num.fetch_add(1);
+        now++;
     }
-    // barrier
 
-    now = done.fetch_add(1);
-    if(now == threads-1 ){
-        node_num.store(0);
-        done.store(0);
-        condition_1 = 0;
-        condition_2 = 1;
-        // cv.notify_all();   
-    }
-    // cv.wait(lock, []{return condition_2;}); 
-    while (!condition_2) usleep(1);
-    // return;
-    if (conflict.load() <= 1) return;        
-    // return;                       // exit if one group remains
+    now = 0;
+
+    if (conflict<= 1) return;    
+    // return;                           // exit if one group remains
     // Third phase: get conflict chains from leaves
-    
-    int leaves_total = leaf_count.load();
 
-    now = node_num.fetch_add(1);
-    while (now < leaves_total) {           // get info
+    while (now < leaf_count) {           // get info
         int leaf = leaves[now];
         int curr = leaf;
         order2[leaf] = leaf;
@@ -313,26 +293,15 @@ void MST(int * MST1, int * MST2 , int id){
         }
         
         my_grp[leaf] = my_grp[curr];
-        now = node_num.fetch_add(1);
+        now++;
     }
 
-    now = done.fetch_add(1);
-    if(now >= threads.load() -1 ){
-        node_num.store(0);
-        done.store(0);
-        condition_1 = 1;
-        condition_2 = 0;
-        // cv.notify_all();        
-    }
-    // cv.wait(lock, []{return condition_1;}); 
-    while (!condition_1) usleep(1);
-    now = node_num.fetch_add(1);
-    // return;
+    now = 0;
 
     // Fourth phase: update min edges according to groups
     while (now < nodes){            
         if (minl[now] == -1){
-            now = node_num.fetch_add(1);
+            now++;
             continue;
         }
         int grp = my_grp[now];
@@ -373,11 +342,14 @@ void MST(int * MST1, int * MST2 , int id){
 
         if (order1[now] == now){                         //edge case handle
             if(minl[now] != -1 && order2[minl[now]] == now){
+            
                 if (order2[now] == minl[now]){
+
                     order2[minl[now]] = minl[now];   
                     order1[minl[now]] = now;
                     my_grp[minl[now]] = now;
-                    leaves[leaf_count.fetch_add(1)] = minl[now];
+                    leaves[leaf_count] = minl[now];
+                    leaf_count++;
                 }else {
                     order1[minl[now]] = order1[order2[now]];
                     order1[order2[now]] = minl[now];
@@ -385,48 +357,33 @@ void MST(int * MST1, int * MST2 , int id){
                 }
             }
         }
-        
     
         minv[now] = min;
         minl[now] = minloc;
-        now = node_num.fetch_add(1);
+        now++;
     }
-    // cout << conflict.load() << " groups remain.\n";
-    // return;
-    // barrier
-    now = done.fetch_add(1);
-    if(now >= threads.load() -1 ){
-        node_num.store(0);
-        done.store(0);
-        condition_1 = 0;
-        condition_2 = 1;
-        cv.notify_all();
-        // print_meta();
-        // print_graph();
-    }
-    // cv.wait(lock, []{return condition_2;}); 
-    while (!condition_2) usleep(1);
-    leaves_total = leaf_count.load();
 
-    // Final phase:  iterate till no conflicts remain
-    int conflicts_now = 0;
-    int conflicts_total = 0;
+
     // return;
-    // cout << conflict.load() << " groups remain.\n";
-    while (conflict.load() > 1){
-        now = node_num.fetch_add(1);
-        
-        while (now < leaves_total) {           // get info
+
+    int conflicts_total = 0;
+    int conflicts_now = 0;
+    int leaves_total = leaf_count;
+
+    // final phase: resolve conflicts between groups
+    while (conflict > 1){
+        now = 0;
+
+        while (now < leaf_count) {           // get info
             int leaf = leaves[now];
             int curr = leaf;
             int minloc = leaf;
             int minval = minv[leaf];
-            // int minloc_grp = my_grp[minloc];
-            // cout << "Thread " << id << 
-            //     " processing branch starting at leaf " << leaf << "\n";
-                if (branch_minv[now] > 0) { now = node_num.fetch_add(1); continue;}
+
+                if (branch_minv[now] > 0) { now++; continue;}
                 // curr = order1[curr];
                 while (order2[curr] == leaf){           // get min for that branch            
+
                     if (minv[curr] < minval){
                         minval = minv[curr];
                         minloc = curr;
@@ -440,39 +397,33 @@ void MST(int * MST1, int * MST2 , int id){
                 }
                 branch_minl[now] = minloc;
                 branch_minv[now] = minval;
-                now = node_num.fetch_add(1);
+                // cout << "Thread " << my_grp[leaf] << " branch starting at leaf " 
+                // << leaf << " has minloc " << minloc << " with value " << minval << " going to group " << my_grp[minl[minloc]] << "\n";
+                now++;
             }   
             
-            // barrier
-            now = done.fetch_add(1);
-            if(now >= threads.load() -1 ){
-                node_num.store(0);
-                done.store(0);
-                condition_1 = 1;
-                condition_2 = 0;
-                // cv.notify_all();
-                // print_graph();
-                // print_meta();
-            }
-            // cv.wait(lock, []{return condition_1;}); 
-            while (!condition_1) usleep(1);
-            // return;
             
             // get min for the groups
-            now = node_num.fetch_add(1);
+            now = 0;
             conflicts_total += conflicts_now;
-            conflicts_now = conflict.load();
+            conflicts_now = conflict;
+            // cout << conflicts_total << " " << conflicts_now << "\n";
             // return;
-            while (now < conflicts_now) {    
+            while (now < conflicts_now) {  
+                // cout << "Now processing group head " << now + conflicts_total << "\n";
                 int group_head = groupn[now + conflicts_total];
                 int min = INT32_MAX;
                 int minloc = -1;
                 // int frmo = 0;
-                                
+                
+                // cout << groupn[now] << " total conflicts now " << conflicts_now << "\n";
+                
                 //search for min in branch mins
                 for (int i = 0; i < leaves_total; i++){
                     int leaf = leaves[i];
+                    // cout << "Thread " << group_head << " processing group head " << group_head << "\n";
                     if (my_grp[leaf] != group_head) continue;
+                    // cout << "Thread " << group_head << " processing group head " << my_grp[group_head] << "\n";
                     if (branch_minv[i] < min){
                         min = branch_minv[i];
                         minloc = branch_minl[i];
@@ -482,45 +433,34 @@ void MST(int * MST1, int * MST2 , int id){
                 }
                 // store in meta 
                 meta[group_head] = minloc;
-                now = node_num.fetch_add(1);
+                now = now + 1;
             }
-            
-            // barrier
             // return;
-            now = done.fetch_add(1);
-            if(now >= threads.load() -1 ){
-                node_num.store(0);
-                done.store(0);
-                conflict.store(0);
-                condition_1 = 0;
-                condition_2 = 1;
-                // cv.notify_all();
 
+            now = 0;
+            conflict = 0;
+            //print groupn
+            //                 for (int i = 0; i < nodes; i++){
+            //     cout << groupn[i] << " ";
+            // }
 
-            }
-            // cv.wait(lock, []{return condition_2;});
-            while (!condition_2) usleep(1);
-            // cout << conflict.load() << " groups remain.\n";
-            
-            // now gt conflicts again between groups this time
-            now = node_num.fetch_add(1);
             while (now < conflicts_now){            
                 int group_head = groupn[now + conflicts_total];
                 int minloc = meta[group_head];
                 // cout << "Thread " << group_head << " processing group head " << meta[group_head] << "\n";
                 if (minloc == -1){
-                    now = node_num.fetch_add(1);
+                    now = now + 1;
                     continue;
                 }
                 int minloc_loc = minl[minloc];              // actual node to which minloc connects in other group
                 if (minloc_loc == -1){
-                    now = node_num.fetch_add(1);
+                    now = now + 1;
                     continue;
                 }
                 int minloc_grp = my_grp[minloc_loc];        // group of actual node 
                 
                 if (group_head == minloc_grp){
-                    now = node_num.fetch_add(1);
+                    now = now + 1;
                     continue;
                 }
                 
@@ -528,62 +468,48 @@ void MST(int * MST1, int * MST2 , int id){
                         if (group_head > minloc_grp){   // resolve by group head id
 
                             my_grp[minloc_grp] = group_head;
-                            int this_edge = edge.fetch_add(1);
-                            MST1[this_edge] = minloc;
-                            MST2[this_edge] = minloc_loc; 
-                            weights[this_edge] = minv[minloc];
-                            // weights[this_edge] = id;
-                            total_weight.fetch_add(minv[minloc]);
-                            // cout << "Conflict resolved, " << old_conflict << " groups remain.\n";
-                            groupn[conflict.fetch_add(1) + conflicts_total + conflicts_now] = group_head;
-                            // cout << "connecting groups " << group_head << " and " << minloc_grp << "\n";
+        
+                            MST1[edge] = minloc;
+                            MST2[edge] = minloc_loc;
+                            weights[edge] = minv[minloc];
+                            // weights[edge] = id;
+                            edge++;
+                            total_weight += minv[minloc];
+
+                            groupn[conflict + conflicts_total + conflicts_now] = group_head;
+                            conflict++;
+                            // cout << "remain " << conflict << endl;
                         }
                     }
                     else {  // no conflict just add edge
-
-                        int this_edge = edge.fetch_add(1);
-                        MST1[this_edge] = minloc;
-                        MST2[this_edge] = minloc_loc;
-                        weights[this_edge] = minv[minloc];
-                        // weights[this_edge] = id;
-                        total_weight.fetch_add(minv[minloc]);
+                        MST1[edge] = minloc;
+                        MST2[edge] = minloc_loc;
+                        weights[edge] = minv[minloc];
+                        // weights[edge] = id;
+                        edge++;
+                        total_weight += minv[minloc];
                         my_grp[group_head] = minloc_grp;
                         // cout << "connecting groups " << group_head << " and " << minloc_grp << "with meight " << minv[minloc] << "\n";
                     }
-                now = node_num.fetch_add(1);
+                now = now + 1;
             }
-                // return;//////////////////
-            now = done.fetch_add(1);
-            if(now >= threads.load() -1 ){
-                node_num.store(0);
-                done.store(0);
-                condition_1 = 1;
-                condition_2 = 0;
-                // cv.notify_all();
-            }
-            // cv.wait(lock, [] { return condition_1; });/
-            while (!condition_1) usleep(1);
+
 
             if (conflict <= 1) {return; }              // exit if one group remains
-            
-            // prepare for next iteration
-            // get new groups for chains 
-            // get new mins if min was in same group
-            // leaves are same as before
+            now = 0;
 
-            now = node_num.fetch_add(1);
             // return;
             while (now < leaves_total) {         
+                // cout << "Thread " << id << " preparing for next iteration.\n";
                 int leaf = leaves[now];
                 
                 // update mins
                 int my_grp_leaf = my_grp[leaf];
                 int minloc = branch_minl[now];
                 if (minloc == -1){
-                    now = node_num.fetch_add(1);
+                    now = now + 1;
                     continue;
                 }
-
 
                 while (my_grp[my_grp_leaf] != my_grp_leaf ){ //cout << "my_grp_leaf " << my_grp_leaf << " " << my_grp[my_grp_leaf] << "\n";
                     // usleep(1000);
@@ -594,7 +520,6 @@ void MST(int * MST1, int * MST2 , int id){
                 while (my_grp[minloc_grp] != minloc_grp){
                     minloc_grp = my_grp[minloc_grp];}
                 my_grp[minloc] = minloc_grp;
-
                 
                 if (minloc_grp == my_grp_leaf){        // meaning that minloc is in same group as leaf
                                                                         // OR value was used
@@ -675,20 +600,11 @@ void MST(int * MST1, int * MST2 , int id){
                     
                 }
                 
-                now = node_num.fetch_add(1);   
+                now = now + 1;  
                      
             } 
-            if (conflict.load() <= 1) return;
-            now = done.fetch_add(1);
-            if(now >= threads.load() -1 ){
-                node_num.store(0);
-                done.store(0);
-                condition_1 = 0;
-                condition_2 = 1;
-                // cv.notify_all();    
-            }
-            // cv.wait(lock, []{return condition_2;});
-            while (!condition_2) usleep(1);
+            if (conflict <= 1) return;
+            // now = now + 1;
             // return;
     }
     return;
@@ -716,27 +632,29 @@ int main(int argc, char** argv){
     int * MST1 = new int[nodes]();
     int * MST2 = new int[nodes]();
     weights = new int[nodes]();
-    node_num.store(0);               // reset node counter for threads
+    node_num = 0;               // reset node counter for threads
 
-    int thread_temp = threads.load();
-    thread thread_ids[thread_temp];
+    int thread_temp = threads;
+    // thread thread_ids[thread_temp];
 
 
-    cout << nodes << " nodes, " << edges << " edges, " << threads.load() << " threads.\n";
+    cout << nodes << " nodes, " << edges << " edges, " << threads << " threads.\n";
     chrono::high_resolution_clock::time_point start = chrono::high_resolution_clock::now();
 
+    MST(MST1, MST2 , 0);         // run mst algorithm
 
-    for (int i = 0; i < thread_temp; i++) {
-        thread_ids[i] = thread(MST,  MST1, MST2     , i);
-    }
 
-    for (int i = 0; i < thread_temp; i++) {
-        thread_ids[i].join();
-    }
+    // for (int i = 0; i < thread_temp; i++) {
+    //     thread_ids[i] = thread(MST,  MST1, MST2     , i);
+    // }
+
+    // for (int i = 0; i < thread_temp; i++) {
+    //     thread_ids[i].join();
+    // }
 
     // print_graph();
     // print_meta();
-    cout << edge.load() << " edges in MST.\n";
+    cout << edge << " edges in MST.\n";
     
     chrono::high_resolution_clock::time_point end = chrono::high_resolution_clock::now();
 

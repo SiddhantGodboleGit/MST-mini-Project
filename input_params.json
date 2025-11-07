@@ -1,7 +1,7 @@
 {
     "seed": "0",
-    "nodes": "10000",
-    "edges": "256",
+    "nodes": "30000",
+    "edges": "9000",
     "threads": "4",
     "connected": true,
     "complete": false,

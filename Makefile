@@ -1,7 +1,8 @@
 # CPP Flages
 CPP = g++
 #make int as int 4 bytes for faster computation 
-CFLAGS = -march=native -O3 -flto -ffast-math -fno-math-errno -fno-trapping-math
+CFLAGS = -march=native -O3 -flto -ffast-math
+
 
 # Files
 EXE = mst.out

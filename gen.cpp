@@ -294,6 +294,26 @@ void print_it(){
     return;
 }
 
+void make_beeg(){
+    string filename_complete = "input/" + to_string(nodes) + "_" + to_string(edges) + "_" + to_string(seed) + "_" + to_string(connected) + to_string(complete) + to_string(regular) + ".txt";
+    FILE* file = fopen(filename_complete.c_str(), "wb");
+    if (!file) return;
+    // make as the smaller format
+    meta = new int [nodes]();
+    sizes = new int [nodes]();
+    matrix = new int*[nodes]();
+    //make as linked list this time
+
+    // if (complete == 1){
+        cout << " too beeg "; return;
+    // }
+
+    
+
+    fclose(file);
+    return;
+}
+
 int main() {
     ifstream infile;
 
@@ -325,19 +345,25 @@ int main() {
     if (edges > ((nodes)*(nodes-1))/2 ){ edges = ((nodes-1)*(nodes))/2; cout << "Edges exceed max possible edges, setting to complete graph.\n"; }
     if (edges < 0) edges = 0;
     
+    
     cout << success << " " << seed << " " << nodes << " " << edges << " " << density << " "
-         << connected << " " << complete << " " << regular << endl;
+    << connected << " " << complete << " " << regular << endl;
     // set the seed 
     srand(seed);
+    
+    if (nodes > 66666){
+        make_beeg();
+        return 0;
+    }
 
-    matrix = new int*[nodes]();
+    matrix = new int32_t*[nodes]();
     meta = new int [nodes]();
     sizes = new int [nodes]();
     last_index = new int [nodes]();
 
     for (int i = 0; i < nodes; i++) {
         last_index[i] = -1;
-        matrix[i] = new int[nodes - i  ]();
+        matrix[i] = new int32_t[nodes - i  ]();
     }
 
     //if connected make spanning tree first
