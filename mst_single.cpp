@@ -54,7 +54,7 @@ void mst_to_file(int * MST1, int * MST2){
     for (int i = 0; i < total; i++){
         int u = MST1[i];
         int v = MST2[i];
-        int w = weights[u];
+        int w = weights[i];
         outfile << u << " " << v << " "  << w << "\n";
     }
     cout << "MST written to file \033[1m" << filename << "\033[0m with total weight " << total_weight << ".\n";
@@ -115,6 +115,18 @@ bool get_ready(){
     if (thread_temp < 1) thread_temp = 1;
     if (thread_temp > nodes) thread_temp = nodes;
     if (complete) edges = ((nodes-1)*(nodes))/2;
+    if (connected && edges < nodes -1) edges = nodes -1;
+    if (complete==1 && regular==1){
+        regular = 0;
+    }
+    
+    if (regular == 1){
+        int max_edges = (nodes*(nodes-1))/2;
+        int min_edges = nodes;
+        if (edges < min_edges) edges = min_edges;
+        if (edges > max_edges) edges = max_edges;
+        edges = (edges / nodes) * nodes; // make it multiple of nodes   
+    }
     threads = thread_temp;
     srand(seed);    
 

@@ -105,6 +105,24 @@ void spanit(){
     return;
 }
 
+void make_regular(){
+    // generate fixed number of edges for each node
+    int target_degree = edges / nodes;
+    for(int i = 0; i < nodes; i++){
+        //connect to neighbours with distance curret degree
+        for (int j = 1; j <= target_degree / 2; j++){
+            int neighbor = (i + j) % nodes;
+            if (i < neighbor){
+                matrix[i][neighbor - i] = -2;
+            }
+            else {
+                matrix[neighbor][i - neighbor] = -2;
+            }
+            done++;
+        }
+    }
+}
+
 void gen_edge(){
     //generate edges
     // for (int i = 0 ; i < nodes ; i ++){
@@ -181,13 +199,14 @@ void break_edges(){
 }
 
 void fill_in_complete(){
+    mt19937 rng(seed);
+    int * used = new int[nodes]();
+    uniform_int_distribution<int> dist(1, nodes * 2);
     for (int i = 0; i < nodes; i++){
         int till = nodes - i;
-        matrix[i][0] = nodes - 1;
-        int max_weight = nodes * 2;
         // edge weights distinct and from 1 to nodes
         for (int j = 1; j < till; j++){
-          matrix[i][j] = rand() % max_weight + 1;
+          matrix[i][j] = dist(rng);
         }
     }
     done = (nodes*(nodes-1))/2;
@@ -298,23 +317,96 @@ void make_beeg(){
     string filename_complete = "input/" + to_string(nodes) + "_" + to_string(edges) + "_" + to_string(seed) + "_" + to_string(connected) + to_string(complete) + to_string(regular) + ".txt";
     FILE* file = fopen(filename_complete.c_str(), "wb");
     if (!file) return;
-    // make as the smaller format
-    meta = new int [nodes]();
-    sizes = new int [nodes]();
-    matrix = new int*[nodes]();
-    //make as linked list this time
-
-    // if (complete == 1){
-        cout << " too beeg "; return;
-    // }
-
+    // make as the smaller format directly
+    // make each line then print it
+    //first line is     nodes-1(1) 
+    char buffer[65536];
+    char* buf_ptr = buffer;;
+    const char* buf_end = buffer + sizeof(buffer) - 100; // Leave space for last writ
+    for (int i = 0 ; i < nodes; i++){
+        buf_ptr += sprintf(buf_ptr, "%ld(1) ", nodes - 1);
+        if (buf_ptr >= buf_end) {
+            fwrite(buffer, 1, buf_ptr - buffer, file);
+            buf_ptr = buffer;
+        }
+    }
+    mt19937 rng(seed);
+    // nextlines are adjacency list
+    // cout << "required space: " << (double)(nodes * (nodes - 1) / 2 * sizeof(int) ) / (1024 * 1024 * 1024) << " GB\n";
+    // cchec k if enough space is available
     
+    buf_ptr += sprintf(buf_ptr, "\n");
+    uniform_int_distribution<int> dist(1, nodes * 2);
+    // int * used = new int[nodes]();
+    for (int i = 0 ; i < nodes; i++){
+        for (int j = i+1 ; j < nodes; j++){
+            if (i != j){
+                buf_ptr += sprintf(buf_ptr, "%d(%d) ", j, dist(rng));
+                if (buf_ptr >= buf_end) {
+                    fwrite(buffer, 1, buf_ptr - buffer, file);
+                    buf_ptr = buffer;
+                }
+            }
+        }
+        buf_ptr += sprintf(buf_ptr, "\n");
+        if (i % 1000 == 0) {
+            cout << "\rWritten " << i << "/" << nodes << " nodes." << flush;
+        }
+    }
+    // Write remaining data
+    if (buf_ptr > buffer) {
+        fwrite(buffer, 1, buf_ptr - buffer, file);
+    }
+
+    cout << "Graph written to file \033[1m" << filename_complete << "\033[0m\n";
+  
 
     fclose(file);
     return;
 }
 
-int main() {
+void write_as_matrix(){
+    string filename_matrix = "matrix.txt";
+    FILE* file = fopen(filename_matrix.c_str(), "wb");
+    if (!file) return;
+
+    // Use a large buffer for batch writing
+    char buffer[65536];
+    char* buf_ptr = buffer;
+    const char* buf_end = buffer + sizeof(buffer) - 100; // Leave space for last writ
+
+    for (int i = 0; i < nodes; i++){
+        for (int j = 0; j < nodes; j++){
+            int value;
+            if (i < j){
+                value = matrix[i][j - i];
+            }
+            else if (i == j){
+                value = 0;
+            }
+            else {
+                value = matrix[j][i - j];
+            }
+            buf_ptr += sprintf(buf_ptr, "%d ", value);
+            if (buf_ptr >= buf_end) {
+                fwrite(buffer, 1, buf_ptr - buffer, file);
+                buf_ptr = buffer;
+            }
+        }
+        buf_ptr += sprintf(buf_ptr, "\n");
+    }
+
+    // Write remaining data
+    if (buf_ptr > buffer) {
+        fwrite(buffer, 1, buf_ptr - buffer, file);
+    }
+
+    fclose(file);
+    cout << "Adjacency matrix written to file \033[1m" << filename_matrix << "\033[0m\n";
+    return;
+}
+
+int main(int argc, char** argv){
     ifstream infile;
 
     infile = ifstream("input_params.json");
@@ -344,14 +436,40 @@ int main() {
     if (nodes < 2) nodes = 2;
     if (edges > ((nodes)*(nodes-1))/2 ){ edges = ((nodes-1)*(nodes))/2; cout << "Edges exceed max possible edges, setting to complete graph.\n"; }
     if (edges < 0) edges = 0;
+    if (complete) edges = ((nodes-1)*(nodes))/2;
+    if (connected && edges < nodes - 1){
+        edges = nodes - 1;
+        // cout << "Edges less than minimum for connected graph, setting edges to " << edges << ".\n";
+    }
+    if (complete==1 && regular==1){
+        regular = 0;
+    }
+    if (regular == 1){
+        int max_edges = (nodes*(nodes-1))/2;
+        int min_edges = nodes;
+        if (edges < min_edges) edges = min_edges;
+        if (edges > max_edges) edges = max_edges;
+        edges = (edges / nodes) * nodes; // make it multiple of nodes   
+    }
+    
     
     
     cout << success << " " << seed << " " << nodes << " " << edges << " " << density << " "
     << connected << " " << complete << " " << regular << endl;
-    // set the seed 
+
+    string fine_pre_check = "input/" + to_string(nodes) + "_" + to_string(edges) + "_" + to_string(seed) + "_" + to_string(connected) + to_string(complete) + to_string(regular) + ".txt";
+    ifstream infile_check(fine_pre_check);
+    cout << "checking for file " << fine_pre_check << "\n";
+    if (infile_check.good()){
+        cout << "Graph with these parameters already exists as \033[1m" << fine_pre_check << "\033[0m\n";
+        return 0;
+    }
+    // set the seed
     srand(seed);
+
+    cout << "Space required by matrix during processing > " << (double)((nodes * (nodes - 1) / 2) * sizeof(int) ) / (1024 * 1024 * 1024) << " GB\n";
     
-    if (nodes > 66666){
+    if (nodes >= 5000 && complete == 1) {
         make_beeg();
         return 0;
     }
@@ -366,17 +484,29 @@ int main() {
         matrix[i] = new int32_t[nodes - i  ]();
     }
 
-    //if connected make spanning tree first
-    if (connected == 1 && complete == 0){
-        spanit();
+    // //print total space used
+    // long long total_space = 0;
+    // total_space += sizeof(int32_t*) * nodes; // matrix pointers
+    // total_space += sizeof(int32_t) * (nodes * (nodes + 1)) / 2; // matrix data
+    // total_space += sizeof(int) * nodes * 3; // meta, sizes, last_index
+    // cout << "Total space allocated: " << (double)total_space / (1024 * 1024 * 1024) << " GB\n";
+
+    if (regular != 1){
+        //if connected make spanning tree first
+        if (connected == 1 && complete == 0){
+            spanit();
+        }
+
+        if (density < 0.5) {
+            gen_edge();
+        }
+        else {
+            break_edges();
+        }
     }
 
-    
-    if (density < 0.5) {
-        gen_edge();
-    }
-    else {
-        break_edges();
+    if (regular == 1 ){
+        make_regular();
     }
     
     // gen_edge();
@@ -386,10 +516,13 @@ int main() {
         fill_in_complete();
     }
     else fill_in();
+
+
     
     get_sizes();
     
     // print_graph();
+    if (argc > 1) write_as_matrix();
 
     print_it();
 

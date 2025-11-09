@@ -123,9 +123,9 @@ class GraphPropertiesForm:
         regular_val = "1" if self.data['regular'] else "0"
 
                 # Debug: Print the converted values
-        print(f"Debug - connected_val: {connected_val}")
-        print(f"Debug - complete_val: {complete_val}")
-        print(f"Debug - regular_val: {regular_val}")
+        # print(f"Debug - connected_val: {connected_val}")
+        # print(f"Debug - complete_val: {complete_val}")
+        # print(f"Debug - regular_val: {regular_val}")
         
         filename = f"input/{self.data['nodes']}_{self.data['edges']}_{self.data['seed']}_{connected_val}_{complete_val}_{regular_val}.txt"
 

@@ -10,6 +10,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <sstream>
+#include <cstring>
 using namespace std;
 #define metyr 1
 
@@ -55,7 +56,7 @@ void mst_to_file(int * MST1, int * MST2){
     for (int i = 0; i < total; i++){
         int u = MST1[i];
         int v = MST2[i];
-        int w = weights[u];
+        int w = weights[i];
         outfile << u << " " << v << " "  << w << "\n";
     }
     cout << "MST written to file \033[1m" << filename << "\033[0m with total weight " << total_weight.load() << ".\n";
@@ -116,6 +117,18 @@ bool get_ready(){
     if (thread_temp < 1) thread_temp = 1;
     if (thread_temp > nodes) thread_temp = nodes;
     if (complete) edges = ((nodes-1)*(nodes))/2;
+    if (connected && edges < nodes -1) edges = nodes -1;
+    if (complete==1 && regular==1){
+        regular = 0;
+    }
+    if (regular == 1){
+        int max_edges = (nodes*(nodes-1))/2;
+        int min_edges = nodes;
+        if (edges < min_edges) edges = min_edges;
+        if (edges > max_edges) edges = max_edges;
+        edges = (edges / nodes) * nodes; // make it multiple of nodes   
+    }
+
     threads.store(thread_temp);
     srand(seed);    
 
@@ -157,7 +170,7 @@ bool get_ready(){
     int i = 0, j = 0, weight = 0;
     while (getline(testfile, line)) {
         istringstream iss(line);
-        //parse same way
+        // parse same way
         while (iss >> j >> paren >> weight >> paren) {
             j = j; // zero based indexing
             if (weight < 0) weight = 1;
@@ -168,7 +181,6 @@ bool get_ready(){
                 graph[i][++last_entry[i]] = -(j); // mark zeros as negative count
                 graph[i][++last_entry[i]] = weight;
             }
-
             if (last_index[j] + 1 == i){
                 graph[j][++last_entry[j]] = weight; 
             }
@@ -178,9 +190,55 @@ bool get_ready(){
             }
             last_index[i] = j;
             last_index[j] = i;
-        }
+        }      
         i++;
     }
+
+    // // print_graph();
+    
+    // char * temp;
+    // for (int i=0; i < nodes ; i++){
+    //     getline(testfile, line);
+    //     temp = &line[0];
+    //     int total = 1, end = 0, curr = 0;
+    //     if (line.length() == 0) continue;
+    //     end = line.length();
+    //     // cout << "Reading node " << i << "with edge data of length " << end << "\n";
+    //     while (total < end ){
+    //         while (temp[curr] != '(') curr++;
+    //         // temp[curr] = '\0';
+    //         j = stoi(temp);
+    //         temp = &temp [++curr];
+    //         total += curr;
+    //         curr = 0;
+    //         while (temp[curr] != ')') curr++;
+    //         // temp[curr] = '\0';
+    //         // cout << line << "\n";
+    //         weight = stoi(temp);
+    //         temp = &temp [curr+2];
+    //         total += curr + 2;
+    //         curr = 0;
+    //         if (weight < 0) weight = 1;
+    //         if (last_index[i] + 1 == j){
+    //             graph[i][++last_entry[i]] = weight; 
+    //         }
+    //         else {
+    //             graph[i][++last_entry[i]] = -(j); // mark zeros as negative count
+    //             graph[i][++last_entry[i]] = weight;
+    //         }
+    //         if (last_index[j] + 1 == i){
+    //             graph[j][++last_entry[j]] = weight; 
+    //         }
+    //         else {
+    //             graph[j][++last_entry[j]] = -(i); // mark zeros as negative count
+    //             graph[j][++last_entry[j]] = weight;
+    //         }
+    //         last_index[i] = j;
+    //         last_index[j] = i;
+    //     }
+    //     // return 1;
+    // }
+    
     // print_graph();
     testfile.close();
     delete[] last_entry;
@@ -258,7 +316,7 @@ void MST(int * MST1, int * MST2 , int id){
                     MST1[this_edge] = now;
                     MST2[this_edge] = minl[now];
                     weights[this_edge] = minv[now];
-                    weights[this_edge] = id;
+                    // weights[this_edge] = id;
                     total_weight.fetch_add(minv[now]);
                 }
             }
@@ -267,7 +325,7 @@ void MST(int * MST1, int * MST2 , int id){
             MST1[this_edge] = now;
             MST2[this_edge] = minl[now];
             weights[this_edge] = minv[now];
-            weights[this_edge] = id;
+            // weights[this_edge] = id;
             total_weight.fetch_add(minv[now]);
             my_grp[now] = my_grp[minl[now]];
         }
@@ -701,6 +759,7 @@ int main(int argc, char** argv){
     if (get_ready() == 0){ cout << "Pls fix input\n"; return 1; }    // read input, alllocate space and initialize graph
         // For fairness no preprocessing is done pure graph in matrix
         //start timer
+    // return 1;
 
     minl = new int[nodes];       // array to store min locations
     minv = new int[nodes];       // array to store min values
@@ -725,9 +784,8 @@ int main(int argc, char** argv){
     cout << nodes << " nodes, " << edges << " edges, " << threads.load() << " threads.\n";
     chrono::high_resolution_clock::time_point start = chrono::high_resolution_clock::now();
 
-
     for (int i = 0; i < thread_temp; i++) {
-        thread_ids[i] = thread(MST,  MST1, MST2     , i);
+        thread_ids[i] = thread(MST,  MST1, MST2  , i);
     }
 
     for (int i = 0; i < thread_temp; i++) {
@@ -740,8 +798,8 @@ int main(int argc, char** argv){
     
     chrono::high_resolution_clock::time_point end = chrono::high_resolution_clock::now();
 
-    chrono::duration<double, std::milli> duration = end - start;
-    cout << "Time: \033[1m" << (double)duration.count() / 1000 << "\033[0m seconds" << endl;
+    chrono::duration<double> duration = end - start;
+    cout << "Time: \033[1m" << (double)duration.count() << "\033[0m seconds" << endl;
     asm volatile("" ::: "memory");
     
     mst_to_file(MST1, MST2);
