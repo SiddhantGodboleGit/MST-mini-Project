@@ -14,8 +14,10 @@ INPUT = input_params.txt
 INPUT2 = input_graph.txt
 OUTPUT = output_mst
 
+NODES = 64
 
-.PHONY: all graph mst clean new cpp matrix single random
+
+.PHONY: all graph mst clean new cpp matrix single random list compare
 
 #Have python3
 
@@ -56,6 +58,20 @@ random: $(EXE) $(EGEN)
 	mkdir output -p
 	./$(EGEN) random
 
+list: $(EXE) $(EGEN)
+	mkdir input -p
+	mkdir output -p
+	./$(EGEN) list random
+
+# input will be make compare {number}
+compare:
+	$(CPP) $(CFLAGS) comparision/compare.cpp -o comparision/compare.out
+	$(CPP) $(CFLAGS) comparision/MainFilterKruskal.cpp -o comparision/MainFilterKruskal.out
+	$(CPP) $(CFLAGS) comparision/MainMST.cpp -o comparision/MainMST.out
+	./comparision/compare.out
+	./comparision/MainFilterKruskal.out comparision/list.txt ${NODES}
+	./comparision/MainMST.out comparision/list.txt ${NODES}
+
 
 # Clean up generated files
 clean:
@@ -66,3 +82,4 @@ cleanall: clean
 	rm -f input/*
 	rm -f output/*
 	rmdir input output
+	rm -f comparision/compare.out comparision/MainFilterKruskal.out comparision/MainMST.out list.txt

@@ -1,9 +1,9 @@
 {
-"nodes": "5",
-"edges": "7",
-"threads": "4",
-"seed": "0",
-"connected": false,
-"complete": false,
-"regular": false
+    "seed": "0",
+    "nodes": "200",
+    "edges": "500000",
+    "threads": "1",
+    "connected": true,
+    "complete": false,
+    "regular": false
 }

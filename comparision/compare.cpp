@@ -89,49 +89,8 @@ bool get_ready(){
     int  seed;
     int thread_temp = 0;
     bool connected = 0 , complete = 0, regular = 0;
-    ifstream infile("input_params.json");
-    if (!infile.is_open()) {
-        cerr << "Unable to open file  \033[1minput_params.json\033[0m\n";
-        return 0;
-    }
-    while (!infile.eof()) { // read input parameters from json file 
-        string key;
-        char colon;
-        if (infile >> key) {
-            if (key == "\"seed\":") infile >> colon >> seed;
-            else if (key == "\"nodes\":") infile >> colon  >> nodes;
-            else if (key == "\"edges\":") infile >> colon  >> edges;
-            else if (key == "\"threads\":") infile >> colon  >> thread_temp;
-            else if (key == "\"connected\":"){ infile  >> key; connected = (key == "true" || key == "true,"); }
-            else if (key == "\"complete\":") { infile   >> key; complete = (key == "true" || key == "true,"); }
-            else if (key == "\"regular\":") { infile  >> key; regular = (key == "true" || key == "true,"); }
-        }
-    }
-    infile.close();
 
-    if (nodes < 2) nodes = 2;
-    if (edges > ((nodes)*(nodes-1))/2 ) edges = ((nodes-1)*(nodes))/2;
-    if (edges < 0) edges = 0;
-    if (thread_temp < 1) thread_temp = 1;
-    if (thread_temp > nodes) thread_temp = nodes;
-    if (complete) edges = ((nodes-1)*(nodes))/2;
-    if (connected && edges < nodes -1) edges = nodes -1;
-    if (complete==1 && regular==1){
-        regular = 0;
-    }
-    
-    if (regular == 1){
-        int max_edges = (nodes*(nodes-1))/2;
-        int min_edges = nodes;
-        if (edges < min_edges) edges = min_edges;
-        if (edges > max_edges) edges = max_edges;
-        edges = (edges / nodes) * nodes; // make it multiple of nodes   
-    }
-    threads = thread_temp;
-    srand(seed);    
-
-    if (filename_complete == "")
-    filename_complete = "input/" + to_string(nodes) + "_" + to_string(edges) + "_" + to_string(seed) + "_" + to_string(connected) + to_string(complete) + to_string(regular) + ".txt";
+    filename_complete = "comparision/list.txt";
 
     cout << "Reading graph from file \033[1m" << filename_complete << "\033[0m ...\n";
     ifstream testfile;
@@ -140,8 +99,7 @@ bool get_ready(){
         cerr << "File \033[1m" << filename_complete << "\033[0m does not exist. Please generate the graph first using 'make graph'.\n";
         return 0;
     }
-    graph = new int*[nodes];                                // allocate space for graph
-
+    
     // read first line to initialize graph matrix
     // size of each row is edges + () + 1
     string line;
@@ -149,57 +107,57 @@ bool get_ready(){
     getline(testfile, line);
     istringstream iss(line);
     int edge_count;
-    int * last_entry = new int[nodes]();
     char paren;
 
-    last_index = new int[nodes]();
+    iss >> nodes >> edges;
+    graph = new int*[nodes];                                // allocate space for graph
     sizess = new int[nodes]();
+    // return 1;
     for (long i = 0; i < nodes; i++){
-        last_index[i] = -1;
-        last_entry[i] = -1;
-        int sizez = 0;
-        iss >> edge_count >> paren >> sizez >> paren;
-        // cout << "Node " << i << " has " << edge_count << " edges and " << sizez << " zeros.\n";
-        sizess[i] = sizez + edge_count;
-        graph[i] = new int32_t[sizess[i]+1];             // int 32 for smaller size
-        // cout << "Node " << i << " has " << edge_count << " edges and " << sizess[i] << " zeros.\n";
+        graph[i] = new int[nodes];
     }
-
-
-    //read input file to graph matrix
+    // return 1;
+    
     int i = 0, j = 0, weight = 0;
     while (getline(testfile, line)) {
         istringstream iss(line);
-        //parse same way
-        while (iss >> j >> paren >> weight >> paren) {
-            j = j; // zero based indexing
-            if (weight < 0) weight = 1;
-            if (last_index[i] + 1 == j){
-                graph[i][++last_entry[i]] = weight; 
-            }
-            else {
-                graph[i][++last_entry[i]] = -(j); // mark zeros as negative count
-                graph[i][++last_entry[i]] = weight;
-                // cout << "Inserted " << (j - last_index[i] - 1) << " zeros for node " << i << " before edge to node " << j << ".\n";
-            }
-
-            if (last_index[j] + 1 == i){
-                graph[j][++last_entry[j]] = weight; 
-            }
-            else {
-                graph[j][++last_entry[j]] = -(i); // mark zeros as negative count
-                graph[j][++last_entry[j]] = weight;
-                // cout << "Inserted " << (i - last_index[j] - 1) << " zeros for node " << j << " before edge to node " << i << ".\n";
-            }
-            last_index[i] = j;
-            last_index[j] = i;
+        while (iss >> i >> j >> weight) {
+            graph[i][j] = weight;
+            graph[j][i] = weight;
         }
         i++;
     }
-    // print_graph();
+
     testfile.close();
-    delete[] last_entry;
     return 1;
+
+}
+
+void matrix_to_mine(){
+    for (int i = 0; i < nodes; i++){
+        int last_index =0;
+        int zeroing = 0;
+        for (int j = 0; j < nodes; j++){
+            // 0 0 0 4 0 0 3 0 0 3 4 5 0 0 1
+            //becomes
+            //-3 4 -7 3 -10 3 4 5 -15 1
+
+            if (graph[i][j] == 0){
+                zeroing = 1;
+            }
+            else {
+                if (zeroing == 1){
+                    graph[i][last_index] = -(j );
+                    last_index++;
+                }
+                graph[i][last_index] = graph[i][j];
+                last_index++;
+                zeroing = 0;
+            }
+        }
+        sizess[i] = last_index;
+    }
+
 }
 
 void MST(int * MST1, int * MST2 , int id){
@@ -652,6 +610,8 @@ int main(int argc, char** argv){
 
     cout << nodes << " nodes, " << edges << " edges, " << threads << " threads.\n";
     chrono::high_resolution_clock::time_point start = chrono::high_resolution_clock::now();
+    // return 0;
+    matrix_to_mine();
 
     MST(MST1, MST2 , 0);         // run mst algorithm
 

@@ -281,12 +281,14 @@ void print_it(){
     }
     buf_ptr += sprintf(buf_ptr, "\n");
 
+    
     // then the adjacency list
     int edge_number = 1;
     for (int i = 0; i < nodes; i++){
 
         for (int j = i+1; j < nodes; j++){
             if (matrix[i][j - i] != 0){
+                //  cout << i <<  " " << j << " " << matrix[i][j-i] << endl;
                 // Fast integer to string conversion and formatting
                 buf_ptr += sprintf(buf_ptr, "%d(%d) ", j, matrix[i][j - i]);
                 
@@ -406,6 +408,32 @@ void write_as_matrix(){
     return;
 }
 
+void write_as_list(){
+    string filename = "comparision/list.txt";
+    ofstream outfile(filename);
+    if (!outfile.is_open()) {
+        cerr << "Unable to open file \033[1mlist.txt\033[0m for writing.\n";
+        return;
+    }
+    outfile << nodes << " " << edges << "\n";
+    long long total_weight = 0;
+    for (int i = 0; i < nodes; i++){
+        for (int j = i + 1; j < nodes; j++){
+            int weight;
+            if (i < j){
+                weight = matrix[i][j - i];
+            }
+            else {
+                weight = matrix[j][i - j];
+            }
+            if (weight != 0){
+                outfile << i << " " << j << " " << weight << "\n";
+                total_weight += weight;
+            }
+        }
+    }
+}
+
 int main(int argc, char** argv){
     ifstream infile;
 
@@ -522,7 +550,8 @@ int main(int argc, char** argv){
     get_sizes();
     
     // print_graph();
-    if (argc > 1) write_as_matrix();
+    if (argc == 2) write_as_matrix();
+    if (argc == 3) write_as_list();
 
     print_it();
 
