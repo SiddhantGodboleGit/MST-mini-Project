@@ -7,9 +7,10 @@ import os
 import json
 
 
-# Ensure the current working directory is set to the script's directory
+# Ensure the current working directory is set to the project root (parent of script_dir)
 script_dir = os.path.dirname(os.path.abspath(__file__))
-os.chdir(script_dir)    
+project_dir = os.path.dirname(script_dir)  # go up one level to project root
+os.chdir(project_dir)    
 
 
 class GraphPropertiesForm:
@@ -20,7 +21,7 @@ class GraphPropertiesForm:
         master.geometry("350x666")
         master.resizable(False, False)
 
-        bg_image_file = Image.open("visual/visual.png")
+        bg_image_file = Image.open(os.path.join(script_dir, "visual.png"))
         bg_image_file = bg_image_file.resize((350, 666), Image.Resampling.LANCZOS)
         self.bg_image = ImageTk.PhotoImage(bg_image_file)
         background_label = tk.Label(master, image=self.bg_image)
@@ -159,7 +160,7 @@ class GraphPropertiesForm:
     def create_action(self):
         self.confirm_btn.config(state=tk.DISABLED, text="creating...", command=self.confirm_action)
         print("\033[1mmake graph\033[0m --silent")
-        result = subprocess.run(["make", "graph" , "--silent"], cwd=script_dir, capture_output=False, text=True, check=True)
+        result = subprocess.run(["make", "graph" , "--silent"], cwd=project_dir, capture_output=False, text=True, check=True)
         self.confirm_btn.config(state=tk.NORMAL, text="MST", command=self.confirm_action)
 
 
@@ -180,7 +181,7 @@ class GraphPropertiesForm:
         self.confirm_btn.config(text="MST_ing")
         print("\033[1mmake mst\033[0m --silent")
         # self.mst_process = subprocess.Popen(["make", "mst", "--silent"], cwd=script_dir)
-        self.mst_process = subprocess.run(["make", "mst", "--silent"], cwd=script_dir, capture_output=False, text=True, check=True)
+        self.mst_process = subprocess.run(["make", "mst", "--silent"], cwd=project_dir, capture_output=False, text=True, check=True)
         self.confirm_btn.config(state=tk.NORMAL, text="Done", command=self.on_closing)
 
     def on_closing(self):
