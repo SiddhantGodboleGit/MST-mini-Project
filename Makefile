@@ -69,9 +69,9 @@ compare:
 	$(CPP) $(CFLAGS) comparision/compare.cpp -o comparision/compare.out
 	$(CPP) $(CFLAGS) comparision/MainFilterKruskal.cpp -o comparision/MainFilterKruskal.out
 	$(CPP) $(CFLAGS) comparision/MainMST.cpp -o comparision/MainMST.out
-	./comparision/compare.out
 	./comparision/MainFilterKruskal.out comparision/list.txt ${NODES}
 	./comparision/MainMST.out comparision/list.txt ${NODES}
+	./comparision/compare.out
 
 # Clean up generated files
 clean:
@@ -82,5 +82,6 @@ cleanall: clean
 	rm -f input/*
 	rm -f output/*
 	rm -f matrix.txt
+	rm -f comparision/list.txt
 	rmdir input output
 	rm -f comparision/compare.out comparision/MainFilterKruskal.out comparision/MainMST.out list.txt

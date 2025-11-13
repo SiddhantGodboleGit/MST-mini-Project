@@ -32,6 +32,8 @@ bool connected, complete, regular;
 int * edgesize;
 int done = 0;
 
+int max_weight = 1000;
+
 void print_graph(){
     cout << "Graph adjacency matrix:\n";
     for (int i = 0; i < nodes; i++){
@@ -201,7 +203,7 @@ void break_edges(){
 void fill_in_complete(){
     mt19937 rng(seed);
     int * used = new int[nodes]();
-    uniform_int_distribution<int> dist(1, nodes * 2);
+    uniform_int_distribution<int> dist(1, max_weight);
     for (int i = 0; i < nodes; i++){
         int till = nodes - i;
         // edge weights distinct and from 1 to nodes
@@ -216,7 +218,6 @@ void fill_in_complete(){
 void fill_in(){
     for (int i = 0; i < nodes; i++){
         int till = nodes - i;
-        int max_weight = nodes * 2;
         for (int j = 1; j < till; j++){
             if (matrix[i][j] != 0){
                 matrix[i][j] = rand() % max_weight + 1;
@@ -338,7 +339,7 @@ void make_beeg(){
     // cchec k if enough space is available
     
     buf_ptr += sprintf(buf_ptr, "\n");
-    uniform_int_distribution<int> dist(1, nodes * 2);
+    uniform_int_distribution<int> dist(1, max_weight);
     // int * used = new int[nodes]();
     for (int i = 0 ; i < nodes; i++){
         for (int j = i+1 ; j < nodes; j++){
@@ -415,6 +416,7 @@ void write_as_list(){
         cerr << "Unable to open file \033[1mlist.txt\033[0m for writing.\n";
         return;
     }
+    else cout << "Writing adjacency list to file \033[1mlist.txt\033[0m ...\n";
     outfile << nodes << " " << edges << "\n";
     long long total_weight = 0;
     for (int i = 0; i < nodes; i++){
@@ -479,6 +481,8 @@ int main(int argc, char** argv){
         if (edges > max_edges) edges = max_edges;
         edges = (edges / nodes) * nodes; // make it multiple of nodes   
     }
+
+    if (max_weight > nodes) max_weight = nodes;
     
     
     
@@ -497,7 +501,7 @@ int main(int argc, char** argv){
 
     cout << "Space required by matrix during processing > " << (double)((nodes * (nodes - 1) / 2) * sizeof(int) ) / (1024 * 1024 * 1024) << " GB\n";
     
-    if (nodes >= 5000 && complete == 1) {
+    if (nodes >= 8000 && complete == 1) {
         make_beeg();
         return 0;
     }

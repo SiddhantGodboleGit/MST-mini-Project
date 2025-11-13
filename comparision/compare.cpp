@@ -43,24 +43,6 @@ uint conflict = 0;
 uint leaf_count = 0;
 string filename_complete;
 
-void mst_to_file(int * MST1, int * MST2){
-    string filename = filename_complete;
-    filename = filename.substr(0, filename.find_last_of('.')) + "_mst.txt";
-    //replace input with output
-    filename = "output/" + filename.substr(filename.find_last_of('/') + 1);
-    ofstream outfile;
-    outfile.open(filename , std::ios::out | std::ios::trunc);
-    int total = edge;
-    for (int i = 0; i < total; i++){
-        int u = MST1[i];
-        int v = MST2[i];
-        int w = weights[i];
-        outfile << u << " " << v << " "  << w << "\n";
-    }
-    cout << "MST written to file \033[1m" << filename << "\033[0m with total weight " << total_weight << ".\n";
-    outfile.close();
-    return;
-}
 
 void print_graph(){
     cout << "Graph Adjacency Matrix:\n";
@@ -165,6 +147,7 @@ void MST(int * MST1, int * MST2 , int id){
     int now = 0;
                                         // First phase: find minimum edge for each node
                                         // and set up meta data
+    // return;
     while (now < nodes){                                         
         int min = INT32_MAX;
         int minloc = -1;
@@ -194,7 +177,7 @@ void MST(int * MST1, int * MST2 , int id){
 
     now = 0;
 
-
+    // return;
     // Second phase: find conflicts 
     //              get leaf nodes of conflict chains
         //              add non-conflict edges to MST
@@ -609,9 +592,12 @@ int main(int argc, char** argv){
 
 
     cout << nodes << " nodes, " << edges << " edges, " << threads << " threads.\n";
-    chrono::high_resolution_clock::time_point start = chrono::high_resolution_clock::now();
     // return 0;
     matrix_to_mine();
+    
+    
+    chrono::high_resolution_clock::time_point start = chrono::high_resolution_clock::now();
+
 
     MST(MST1, MST2 , 0);         // run mst algorithm
 
@@ -632,9 +618,9 @@ int main(int argc, char** argv){
 
     chrono::duration<double, std::milli> duration = end - start;
     cout << "Time: \033[1m" << (double)duration.count() / 1000 << "\033[0m seconds" << endl;
-    asm volatile("" ::: "memory");
+    // asm volatile("" ::: "memory");
     
-    mst_to_file(MST1, MST2);
+    cout << "Total weight of MST: \033[1m" << total_weight << "\033[0m\n";
     // free memory
 
     // print_graph();
