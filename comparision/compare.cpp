@@ -31,6 +31,8 @@ int * order2;
 bool condition_1 = 0;
 bool condition_2 = 0;
 
+int gmin = 1;
+
 long nodes = 64;
 long long edges = 256;
 int threads = 4;
@@ -157,6 +159,7 @@ void MST(int * MST1, int * MST2 , int id){
                 if (graph[now][i] < min) {
                     min = graph[now][i];
                     minloc = index;
+                    if (min == 1) break;
                 }
                 index++;
             }
@@ -566,8 +569,9 @@ void MST(int * MST1, int * MST2 , int id){
 int main(int argc, char** argv){
     if (argc > 1)
         filename_complete = argv[1];
-
+        
     if (get_ready() == 0){ cout << "Pls fix input\n"; return 1; }    // read input, alllocate space and initialize graph
+        matrix_to_mine();
         // For fairness no preprocessing is done pure graph in matrix
         //start timer
 
@@ -591,10 +595,9 @@ int main(int argc, char** argv){
     // thread thread_ids[thread_temp];
 
 
-    cout << nodes << " nodes, " << edges << " edges, " << threads << " threads.\n";
     // return 0;
-    matrix_to_mine();
     
+    cout << nodes << " nodes, " << edges << " edges, " << threads << " threads.\n";
     
     chrono::high_resolution_clock::time_point start = chrono::high_resolution_clock::now();
 

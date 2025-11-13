@@ -14,7 +14,7 @@ INPUT = input_params.txt
 INPUT2 = input_graph.txt
 OUTPUT = output_mst
 
-NODES = 64
+W = 64
 
 
 .PHONY: all graph mst clean new cpp matrix single random list compare
@@ -69,8 +69,8 @@ compare:
 	$(CPP) $(CFLAGS) comparision/compare.cpp -o comparision/compare.out
 	$(CPP) $(CFLAGS) comparision/MainFilterKruskal.cpp -o comparision/MainFilterKruskal.out
 	$(CPP) $(CFLAGS) comparision/MainMST.cpp -o comparision/MainMST.out
-	./comparision/MainFilterKruskal.out comparision/list.txt ${NODES}
-	./comparision/MainMST.out comparision/list.txt ${NODES}
+	./comparision/MainFilterKruskal.out comparision/list.txt ${W}
+	./comparision/MainMST.out comparision/list.txt ${W}
 	./comparision/compare.out
 
 # Clean up generated files

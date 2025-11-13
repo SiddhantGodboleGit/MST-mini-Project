@@ -32,7 +32,7 @@ bool connected, complete, regular;
 int * edgesize;
 int done = 0;
 
-int max_weight = 1000;
+int max_weight = 100;
 
 void print_graph(){
     cout << "Graph adjacency matrix:\n";
