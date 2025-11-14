@@ -35,6 +35,14 @@ To run the same in a sequential code
 ```bash
   make single
 ```
+To use Prim's Algo
+```bash
+  make prim
+```
+To use **cuda** on Boruvka's Algo
+```bash
+  make cuda
+```
 
 To clean / cleanall
 ```bash
